@@ -7,8 +7,8 @@ class AdState {
   AdState(this.initialization);
 
   String get bannerAdUnitId => Platform.isAndroid
-      ? 'ca-app-pub-3940256099942544/6300978111' // Your AdMob Android ad unit ID
-      : 'ca-app-pub-3940256099942544/2934735716'; // Your AdMob iOS ad unit ID
+      ? 'ca-app-pub-9059134115029397/3600864236' // Your AdMob Android ad unit ID
+      : 'ca-app-pub-9059134115029397/5625687576'; // Your AdMob iOS ad unit ID
 
   BannerAdListener get listener => _adListener;
 

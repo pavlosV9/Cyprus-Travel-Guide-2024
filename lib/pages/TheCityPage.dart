@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:location/location.dart';
 import 'package:tourismappofficial/LocationBrain/Location.dart';
 import 'package:tourismappofficial/Places/Nightlife.dart';
+import 'package:tourismappofficial/Places/shops.dart';
 import 'package:tourismappofficial/Places/sights.dart';
 import 'package:tourismappofficial/Places/Beaches.dart';
 import 'package:tourismappofficial/const/Text_Styles.dart';
@@ -17,7 +18,7 @@ import 'package:tourismappofficial/widgets/TabBarchild.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:tourismappofficial/ad_state.dart';
-
+import 'package:connectivity_plus/connectivity_plus.dart';
 class TheCityPage extends StatefulWidget {
   const TheCityPage({super.key});
 
@@ -39,6 +40,8 @@ class _TheCityPageState extends State<TheCityPage> {
   List<Place> unsortedBeaches = [];
   List<Place> sortedSights = [];
   List<Place> unsortedSights = [];
+  List<Place> unsortedShops=[];
+  List<Place> sortedShops=[];
   bool isLocationFetched = false;
   LocationData? userLocation;
 
@@ -63,7 +66,26 @@ class _TheCityPageState extends State<TheCityPage> {
       return Container(); // Return an empty container when the ad is not loaded
     }
   }
+  bool _isSnackBarActive = false; // Flag to track if SnackBar is displayed
 
+  void _showSnackBar() {
+    if (!_isSnackBarActive) {
+      setState(() {
+        _isSnackBarActive = true; // Set flag to true as SnackBar is being shown
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No internet connection. Please check your connection and try again.'),
+          duration: Duration(seconds: 3),
+        ),
+      ).closed.then((reason) {
+        setState(() {
+          _isSnackBarActive = false; // Reset flag when SnackBar is dismissed
+        });
+      });
+    }
+  }
 
 
 
@@ -101,27 +123,28 @@ class _TheCityPageState extends State<TheCityPage> {
     Sights sights = Sights();
     Beaches beaches = Beaches();
     Nightlife nightlife = Nightlife();
+    Shops shops =Shops();
 
     if(providerbrain.city=='Nicosia') {
        allItems = hotels.nicosiaHotels + sights.nicosiaSights + beaches.nicosiaBeach +
-          nightlife.nicosiaNight + restaurants.nicosiaRest;
+          nightlife.nicosiaNight + restaurants.nicosiaRest + shops.NicosiaShops;
     }
     if(providerbrain.city=='Famagusta') {
        allItems = hotels.famagustaHotels + sights.famagustaSights + beaches.famagustaBeach +
-          nightlife.famagustaNight + restaurants.famagustaRest;
+          nightlife.famagustaNight + restaurants.famagustaRest +shops.famagustaShops;
     }
     if(providerbrain.city=='Limassol') {
        allItems = hotels.limassolHotels + sights.limassolSights + beaches.limassolBeach +
-          nightlife.limassolNight + restaurants.limassolRest;
+          nightlife.limassolNight + restaurants.limassolRest + shops.limassolShops;
     }
 
     if(providerbrain.city=='Larnaca') {
        allItems = hotels.larnacaHotels + sights.larnacaSights + beaches.larnacaBeach +
-          nightlife.larnacaNight + restaurants.larnacaRest;
+          nightlife.larnacaNight + restaurants.larnacaRest + shops.LarnacaShops;
     }
     if(providerbrain.city=='Paphos') {
        allItems= hotels.paphosHotels + sights.paphosSights + beaches.paphosBeach +
-          nightlife.paphosNight + restaurants.paphosRest;
+          nightlife.paphosNight + restaurants.paphosRest + shops.PaphosShops;
     }
 
     unsortedRestaurants = restaurants.getRestoraunt(providerbrain.city);
@@ -129,6 +152,7 @@ class _TheCityPageState extends State<TheCityPage> {
     unsortedSights = sights.getSight(providerbrain.city);
     unsortedBeaches = beaches.getBeach(providerbrain.city);
     unsortedNigthlife = nightlife.getNight(providerbrain.city);
+    unsortedShops=shops.getShops(providerbrain.city);
     isLocationFetched = false;
 
   }
@@ -143,7 +167,7 @@ class _TheCityPageState extends State<TheCityPage> {
 
     return SafeArea(
       child: DefaultTabController(
-        length: 5,
+        length: 6,
         child: Column(
           children: [
             Expanded(
@@ -171,32 +195,67 @@ class _TheCityPageState extends State<TheCityPage> {
                             padding: const EdgeInsets.only(top: 8.0, right: 12),
                             child: IconButton(
                               onPressed: () async {
-                                try {
-                                  setState(() {
-                                    loadingScreen = true;
-                                  });
+                                var connectivityResult = await (Connectivity().checkConnectivity());
+                                if (connectivityResult == ConnectivityResult.none) {
+                                  _showSnackBar();
+                                } else {
+                                  // Show rationale dialog before location permission request
+                                  bool shouldRequest = await showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        title: Text('Location Permission'),
+                                          content: Text('This app uses your location to show the distance to places like restaurants and hotels, and to sort them by proximity. Location data enhances your experience by personalizing content while the app is in use and is not shared with third parties.')
+                                        ,actions: <Widget>[
+                                          TextButton(
+                                            child: Text('Cancel'),
+                                            onPressed: () {
+                                              Navigator.of(context).pop(false);
+                                            },
+                                          ),
+                                          TextButton(
+                                            child: Text('OK'),
+                                            onPressed: () {
+                                              Navigator.of(context).pop(true);
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ) ?? false;
 
-                                  MyLocationService locationbrain = MyLocationService();
-                                  LocationData? locationData = await locationbrain.getLocation();
-                                  if (locationData != null) {
-                                    setState(() {
-                                      userLocation = locationData;
-                                      sortPlacesByLocation(locationData, unsortedRestaurants, (sortedList) => sortedRestaurants = sortedList);
-                                      sortPlacesByLocation(locationData, unsortedHotels, (sortedList) => sortedHotels = sortedList);
-                                      sortPlacesByLocation(locationData, unsortedBeaches, (sortedList) => sortedBeaches = sortedList);
-                                      sortPlacesByLocation(locationData, unsortedNigthlife, (sortedList) => sortedNigthlife = sortedList);
-                                      sortPlacesByLocation(locationData, unsortedSights, (sortedList) => sortedSights = sortedList);
-                                    });
+
+                                  // If user accepted the rationale, request permission
+                                  if (shouldRequest) {
+                                    try {
+                                      setState(() {
+                                        loadingScreen = true;
+                                      });
+
+                                      MyLocationService locationbrain = MyLocationService();
+                                      LocationData? locationData = await locationbrain.getLocation();
+                                      if (locationData != null) {
+                                        setState(() {
+                                          userLocation = locationData;
+                                          sortPlacesByLocation(locationData, unsortedRestaurants, (sortedList) => sortedRestaurants = sortedList);
+                                          sortPlacesByLocation(locationData, unsortedHotels, (sortedList) => sortedHotels = sortedList);
+                                          sortPlacesByLocation(locationData, unsortedBeaches, (sortedList) => sortedBeaches = sortedList);
+                                          sortPlacesByLocation(locationData, unsortedNigthlife, (sortedList) => sortedNigthlife = sortedList);
+                                          sortPlacesByLocation(locationData, unsortedSights, (sortedList) => sortedSights = sortedList);
+                                          sortPlacesByLocation(locationData, unsortedShops, (sortedList) => sortedShops=sortedList);
+                                        });
+                                      }
+                                    } finally {
+                                      setState(() {
+                                        loadingScreen = false;
+                                      });
+                                    }
                                   }
                                 }
-                                 finally {
-                                  setState(() {
-                                    loadingScreen = false;
-                                  });
-                                }
                               },
-                              icon: const Icon(Icons.location_on_outlined, size: 40 , color: Colors.black,),
-                            ),
+                              icon: const Icon(Icons.location_on_outlined, size: 40, color: Colors.black,),
+                            )
+
                           ),
                         ],
                       ),
@@ -264,7 +323,8 @@ class _TheCityPageState extends State<TheCityPage> {
                                 Tab(text: 'Hotels'),
                                 Tab(text: 'Venues'),
                                 Tab(text: 'Beaches'),
-                                Tab(text: 'Attractions')
+                                Tab(text: 'Attractions'),
+                                Tab(text: 'Shops',)
                               ],
                             ),
                           ),
@@ -284,6 +344,7 @@ class _TheCityPageState extends State<TheCityPage> {
                               TabBarchild(isLocationFetched: isLocationFetched, sortedPlaces: sortedNigthlife, unsortedPlaces: unsortedNigthlife, userLocation: userLocation),
                               TabBarchild(isLocationFetched: isLocationFetched, sortedPlaces: sortedBeaches, unsortedPlaces: unsortedBeaches, userLocation: userLocation),
                               TabBarchild(isLocationFetched: isLocationFetched, sortedPlaces: sortedSights, unsortedPlaces: unsortedSights, userLocation: userLocation),
+                              TabBarchild(isLocationFetched: isLocationFetched, sortedPlaces: sortedShops, unsortedPlaces: unsortedShops, userLocation: userLocation)
                             ],
                           ),
                         ),

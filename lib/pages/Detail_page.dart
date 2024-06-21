@@ -5,6 +5,7 @@ import 'package:tourismappofficial/provider/Provider_page.dart';
 import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:tourismappofficial/widgets/DynamicMap.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DetailPage extends StatefulWidget {
  final Place place;
@@ -173,10 +174,38 @@ class _DetailPageState extends State<DetailPage> {
                         Flexible(child: Text('${widget.place.category}', style: kDescription))
                       ],
                     ),
+                    if(widget.place.url!=null)
+                    Visibility(
+                      visible: isExpanded,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 35),
+                          const SizedBox(width: 10),
+                          const Icon(Icons.link_sharp, color: Colors.white),
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: InkWell(
+                              onTap: () async {
+                                final Uri url = Uri.parse(widget.place.url!); // Your URL here
+                                if (await canLaunchUrl(url)) {
+                                  await launchUrl(url);
+                                } else {
+                                  throw 'Could not launch $url';
+                                }
+                              },
+                              child: Text(
+                                'Visit Website', // The text that you want to be clickable
+                                style: kOverTabBar.copyWith(color: Colors.blue)
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(
                       height: 10,
                     ),
-
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.start,

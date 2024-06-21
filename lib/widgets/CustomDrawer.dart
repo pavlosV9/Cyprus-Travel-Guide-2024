@@ -16,7 +16,7 @@ class CustomDrawer extends StatelessWidget {
               color: Colors.lightBlue,
             ),
             child: Text(
-              'Ultimate Tourism Guide Cyprus',
+              'Travel Guide Cyprus 2024',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 24,
@@ -35,10 +35,10 @@ class CustomDrawer extends StatelessWidget {
 
           ),
           ListTile(
-            leading: const Icon(Icons.handshake_outlined),
-            title: const Text('Sponsors'),
+            leading: const Icon(Icons.menu_book),
+            title: const Text('History of Cyprus'),
             onTap: () {
-
+             Navigator.pushNamed(context,'/History');
             },
           ),
 
